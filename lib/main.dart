@@ -1,6 +1,5 @@
-// ignore_for_file: library_private_types_in_public_api
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,28 +10,41 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'To-Do List',
-      theme: ThemeData(
-        primarySwatch: Colors.purple,
+    return ChangeNotifierProvider(
+      create: (context) => TaskProvider(),
+      child: MaterialApp(
+        title: 'To-Do List',
+        theme: ThemeData(
+          primarySwatch: Colors.purple,
+        ),
+        home: const TaskListScreen(),
       ),
-      home: const TaskListScreen(),
     );
   }
 }
 
-class TaskListScreen extends StatefulWidget {
+class TaskProvider extends ChangeNotifier {
+  List<String> tasks = [];
+
+  void addTask(String task) {
+    tasks.add(task);
+    notifyListeners();
+  }
+
+  void removeTask(int index) {
+    tasks.removeAt(index);
+    notifyListeners();
+  }
+}
+
+class TaskListScreen extends StatelessWidget {
   const TaskListScreen({super.key});
 
   @override
-  _TaskListScreenState createState() => _TaskListScreenState();
-}
-
-class _TaskListScreenState extends State<TaskListScreen> {
-  List<String> tasks = [];
-
-  @override
   Widget build(BuildContext context) {
+    var tasksProvider = Provider.of<TaskProvider>(context);
+    var tasks = tasksProvider.tasks;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('To-Do List'),
@@ -43,9 +55,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
           return Dismissible(
             key: Key(tasks[index]),
             onDismissed: (direction) {
-              setState(() {
-                tasks.removeAt(index);
-              });
+              tasksProvider.removeTask(index);
             },
             background: Container(
               color: const Color.fromARGB(255, 132, 0, 255),
@@ -71,9 +81,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
             MaterialPageRoute(builder: (context) => AddTaskScreen()),
           );
           if (newTask != null) {
-            setState(() {
-              tasks.add(newTask);
-            });
+            tasksProvider.addTask(newTask);
           }
         },
         child: const Icon(Icons.add),
@@ -85,10 +93,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
 class AddTaskScreen extends StatelessWidget {
   final TextEditingController _textEditingController = TextEditingController();
 
-  AddTaskScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
+    var tasksProvider = Provider.of<TaskProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Incluir Tarefa'),
@@ -109,7 +117,8 @@ class AddTaskScreen extends StatelessWidget {
               onPressed: () {
                 final taskTitle = _textEditingController.text.trim();
                 if (taskTitle.isNotEmpty) {
-                  Navigator.pop(context, taskTitle);
+                  tasksProvider.addTask(taskTitle);
+                  Navigator.pop(context);
                 }
               },
               child: const Text('Incluir Tarefa'),
